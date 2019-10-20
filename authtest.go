@@ -8,16 +8,18 @@
 package main
 
 import (
+	"bufio"
+	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"time"
-
-	"github.com/zmb3/spotify"
 )
 
 // redirectURI is the OAuth redirect URI for the application.
@@ -33,108 +35,115 @@ var (
 )
 
 func main() {
+	deviceName := flag.String("device", "", "Name of Spotify player device.")
+	readPath := flag.String("path", "", "Path to file containing Spotify URI.")
+	playUri := flag.String("uri", "", "Spotify URI of album/playlist to play.")
+	pause := flag.Bool("pause", false, "Pause Spotify playback.")
+	recordUrl := flag.String("record", "", "URL of item to be recorded.")
+	flag.Parse()
+
 	// first start an HTTP server
 	http.HandleFunc("/callback", completeAuth)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
 	})
-	go http.ListenAndServe(":8080", nil)
+
+	var server *http.Server
 
 	token, err := tokenFromFile("tokenFile")
 	if err != nil {
+		server = &http.Server{Addr: ":8080", Handler: nil}
+		go server.ListenAndServe()
 		url := auth.AuthURL(state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
 	} else {
-		fmt.Println("Found an existing token file!")
 		client := auth.NewClient(token)
-		fmt.Println("Sending client to channel")
 		ch <- &client
 	}
 
-	fmt.Println("Waiting for auth token...")
-	// wait for auth to complete
 	client := <-ch
 
-	// use the client to make calls that require authorization
-	user, err := client.CurrentUser()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("You are logged in as:", user.ID)
-
-	page, err := client.GetPlaylistsForUser(user.ID)
-	if err != nil {
-		log.Fatal(err)
+	if server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := server.Shutdown(ctx)
+		handleError(err)
 	}
 
-	var starredID spotify.ID
+	if *pause {
+		err := client.Pause()
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
 
-	for _, playlist := range page.Playlists {
-		fmt.Println(playlist.Name)
-		if playlist.Name == "Starred" {
-			starredID = playlist.ID
+	if *recordUrl != "" {
+		slashIndex := strings.LastIndex(*recordUrl, "/")
+		id := (*recordUrl)[slashIndex+1:]
+
+		var uri spotify.URI
+		var uriString string
+
+		if strings.Contains(*recordUrl, "/album/") {
+			uriString = "spotify:album:" + id
+		} else if strings.Contains(*recordUrl, "/playlist/") {
+			uriString = "spotify:playlist:" + id
+		} else {
+			log.Fatalf("URL represents neither album nor playlist: %s", *recordUrl)
 		}
 
-	}
+		uri = spotify.URI(uriString)
 
-	devices, err := client.PlayerDevices()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var activeId *spotify.ID
-
-	for _, device := range devices {
-		fmt.Println(device.Name, device.ID, device.Active)
-		if device.Name == "Spotifyd@dell7490" {
-			activeId = &device.ID
+		fmt.Println(uri)
+	} else {
+		if *deviceName == "" {
+			log.Fatal("Device name is required.")
 		}
+
+		var spotifyUri spotify.URI
+
+		if *playUri != "" && *readPath != "" {
+			log.Fatal("Need to specify either a path or a URI, but not both.")
+		} else if *playUri != "" {
+			spotifyUri = spotify.URI(*playUri)
+		} else {
+			spotifyUri = getPlayURI(*readPath)
+		}
+
+		devices, err := client.PlayerDevices()
+		handleError(err)
+
+		var playerId *spotify.ID
+
+		for _, device := range devices {
+			if device.Name == *deviceName {
+				playerId = &device.ID
+				if !device.Active {
+					err = client.TransferPlayback(*playerId, false)
+					handleError(err)
+				}
+			}
+		}
+
+		if playerId == nil {
+			log.Fatal("Player not found.")
+		}
+
+		playOptions := &spotify.PlayOptions{
+			DeviceID:        playerId,
+			PlaybackContext: &spotifyUri,
+		}
+
+		err = client.PlayOpt(playOptions)
+		handleError(err)
 	}
+}
 
-	if activeId == nil {
-		log.Fatal("No active device")
+func handleError(e error) {
+	if e != nil {
+		log.Fatal(e)
 	}
-
-	err = client.TransferPlayback(*activeId, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fullPlaylist, err := client.GetPlaylist(starredID)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//totalTracks := fullPlaylist.Tracks.Total
-	//fmt.Println(totalTracks)
-	//trackNum := rand.Intn(int(totalTracks))
-	rand.Seed(time.Now().UTC().UnixNano())
-	trackNum := rand.Intn(100)
-	fmt.Println(trackNum)
-
-	uri := fullPlaylist.Tracks.Tracks[trackNum].Track.URI
-	track := fullPlaylist.Tracks.Tracks[trackNum].Track
-
-	uriList := []spotify.URI{uri}
-
-	playOptions := &spotify.PlayOptions{
-		DeviceID: activeId,
-		URIs:     uriList,
-	}
-
-	err = client.PlayOpt(playOptions)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fullTrack, err := client.GetTrack(track.ID)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(fullTrack.Name)
-	fmt.Println(fullTrack.Artists[0].Name)
-	fmt.Println(fullTrack)
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {
@@ -157,24 +166,48 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // Retrieves a token from a local file.
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
+func tokenFromFile(filePath string) (*oauth2.Token, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
-	return tok, err
+	defer file.Close()
+	token := &oauth2.Token{}
+	err = json.NewDecoder(file).Decode(token)
+	return token, err
+}
+
+func getPlayURI(filePath string) spotify.URI {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var uri spotify.URI
+
+	for scanner.Scan() {
+		uri = spotify.URI(scanner.Text())
+		break
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	} else if string(uri) == "" {
+		log.Fatal("file empty or invalid")
+	}
+
+	return uri
 }
 
 // Saves a token to a file path.
 func saveToken(path string, token *oauth2.Token) {
 	fmt.Printf("Saving credential file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Unable to cache oauth token: %v", err)
 	}
-	defer f.Close()
-	json.NewEncoder(f).Encode(token)
+	defer file.Close()
+	json.NewEncoder(file).Encode(token)
 }
