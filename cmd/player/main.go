@@ -13,6 +13,10 @@ func main() {
 	pause := flag.Bool("pause", false, "Pause Spotify playback.")
 	flag.Parse()
 
+	if *pause && (*deviceName != "" || *playUri != "") {
+		log.Fatal("Please specify either [pause] OR [device and uri], but not combinations of both sets of flags.")
+	}
+
 	if *pause {
 		spotifyplayer.Pause()
 		os.Exit(0)
@@ -21,6 +25,6 @@ func main() {
 	if *deviceName != "" && *playUri != "" {
 		spotifyplayer.Play(*deviceName, *playUri)
 	} else {
-		log.Fatal("Device name and Spotify URI are required.")
+		log.Fatal("Both device name and Spotify URI are required for playback.")
 	}
 }
