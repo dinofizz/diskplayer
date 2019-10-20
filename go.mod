@@ -1,4 +1,4 @@
-module diskplayer-client
+module github.com/dinofizz/diskplayer
 
 go 1.13
 
