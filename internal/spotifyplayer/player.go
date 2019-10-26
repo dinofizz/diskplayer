@@ -2,10 +2,8 @@ package spotifyplayer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/zmb3/spotify"
-	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 	"os"
@@ -17,59 +15,45 @@ var (
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
 	ch    = make(chan *spotify.Client, 1)
 	state = "abc123"
+	redirectURI = os.Getenv(SPOTIFY_CALLBACK_URL)
 )
 
-const redirectURI = "http://localhost:8080/callback"
+const (
+	SPOTIFY_CALLBACK_URL = "SPOTIFY_CALLBACK_URL"
+	SPOTIFY_DEVICE_NAME = "SPOTIFY_DEVICE_NAME"
+)
 
-func Play(deviceName string, uriString string) {
+func Play(uri string) {
+	deviceName := os.Getenv(SPOTIFY_DEVICE_NAME)
 	if deviceName == "" {
-		log.Fatal("Device name is required.")
+		log.Fatalf("Environment variable %s is empty.", SPOTIFY_DEVICE_NAME)
 	}
 
-	if uriString == "" {
+	if uri == "" {
 		log.Fatal("Spotify URI is required.")
 	}
 
-	spotifyUri := spotify.URI(uriString)
+	spotifyUri := spotify.URI(uri)
 
-	client := getClient()
+	client := client()
 
-	devices, err := client.PlayerDevices()
-	handleError(err)
-
-	var playerId *spotify.ID
-
-	for _, device := range devices {
-		if device.Name == deviceName {
-			playerId = &device.ID
-			if !device.Active {
-				err = client.TransferPlayback(*playerId, false)
-				handleError(err)
-			}
-		}
-	}
-
-	if playerId == nil {
-		log.Fatal("Player not found.")
-	}
+	playerId := getPlayerId(client, deviceName)
 
 	playOptions := &spotify.PlayOptions{
 		DeviceID:        playerId,
 		PlaybackContext: &spotifyUri,
 	}
 
-	err = client.PlayOpt(playOptions)
+	err := client.PlayOpt(playOptions)
 	handleError(err)
 }
 
 func Pause() {
-	err := getClient().Pause()
+	err := client().Pause()
 	handleError(err)
-	os.Exit(0)
 }
 
-func getClient() *spotify.Client {
-
+func client() *spotify.Client {
 	http.HandleFunc("/callback", completeAuth)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
@@ -79,6 +63,9 @@ func getClient() *spotify.Client {
 
 	token, err := tokenFromFile("tokenFile")
 	if err != nil {
+		if redirectURI == "" {
+			log.Fatalf("Environment variable %s is empty.", SPOTIFY_CALLBACK_URL)
+		}
 		server = &http.Server{Addr: ":8080", Handler: nil}
 		go server.ListenAndServe()
 		url := auth.AuthURL(state)
@@ -100,12 +87,6 @@ func getClient() *spotify.Client {
 	return client
 }
 
-func handleError(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-}
-
 func completeAuth(w http.ResponseWriter, r *http.Request) {
 	tok, err := auth.Token(state, r)
 	if err != nil {
@@ -125,25 +106,30 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 	ch <- &client
 }
 
-// Retrieves a token from a local file.
-func tokenFromFile(filePath string) (*oauth2.Token, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
+func getPlayerId(client *spotify.Client, deviceName string) *spotify.ID {
+	devices, err := client.PlayerDevices()
+	handleError(err)
+
+	var playerId *spotify.ID
+	for _, device := range devices {
+		if device.Name == deviceName {
+			playerId = &device.ID
+			if !device.Active {
+				err = client.TransferPlayback(*playerId, false)
+				handleError(err)
+			}
+		}
 	}
-	defer file.Close()
-	token := &oauth2.Token{}
-	err = json.NewDecoder(file).Decode(token)
-	return token, err
+
+	if playerId == nil {
+		log.Fatal("Player not found.")
+	}
+
+	return playerId
 }
 
-// Saves a token to a file path.
-func saveToken(path string, token *oauth2.Token) {
-	fmt.Printf("Saving credential file to: %s\n", path)
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		log.Fatalf("Unable to cache oauth token: %v", err)
+func handleError(e error) {
+	if e != nil {
+		log.Fatal(e)
 	}
-	defer file.Close()
-	json.NewEncoder(file).Encode(token)
 }
