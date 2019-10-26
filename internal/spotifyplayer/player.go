@@ -3,6 +3,7 @@ package spotifyplayer
 import (
 	"context"
 	"fmt"
+	"github.com/dinofizz/diskplayer/internal/email"
 	"github.com/zmb3/spotify"
 	"log"
 	"net/http"
@@ -13,14 +14,14 @@ import (
 var (
 	auth = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
-	ch    = make(chan *spotify.Client, 1)
-	state = "abc123"
+	ch          = make(chan *spotify.Client, 1)
+	state       = "abc123"
 	redirectURI = os.Getenv(SPOTIFY_CALLBACK_URL)
 )
 
 const (
 	SPOTIFY_CALLBACK_URL = "SPOTIFY_CALLBACK_URL"
-	SPOTIFY_DEVICE_NAME = "SPOTIFY_DEVICE_NAME"
+	SPOTIFY_DEVICE_NAME  = "SPOTIFY_DEVICE_NAME"
 )
 
 func Play(uri string) {
@@ -70,6 +71,8 @@ func client() *spotify.Client {
 		go server.ListenAndServe()
 		url := auth.AuthURL(state)
 		fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+		_, err := email.SendAuthenticationUrlEmail(url)
+		handleError(err)
 	} else {
 		client := auth.NewClient(token)
 		ch <- &client
