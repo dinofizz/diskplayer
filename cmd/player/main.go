@@ -13,9 +13,11 @@ func main() {
 	flag.Parse()
 
 	if *pause && *uri != "" {
+		flag.Usage()
 		log.Fatal("Please specify either [pause] OR [uri], but not both.")
 	} else if !*pause && *uri == "" {
 		flag.Usage()
+		log.Fatal("Please specify a Spotify URI.")
 	}
 
 	config.ReadConfig()
