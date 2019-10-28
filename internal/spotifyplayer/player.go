@@ -18,6 +18,7 @@ import (
 var (
 	ch    = make(chan *spotify.Client, 1)
 	state = "abc123"
+	auth  spotify.Authenticator
 )
 
 const (
@@ -56,8 +57,6 @@ func Pause() {
 	err := client().Pause()
 	errorhandler.HandleError(err)
 }
-
-var auth spotify.Authenticator
 
 func client() *spotify.Client {
 
