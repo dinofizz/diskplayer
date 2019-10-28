@@ -15,7 +15,7 @@ func main() {
 	if *pause && *uri != "" {
 		log.Fatal("Please specify either [pause] OR [uri], but not both.")
 	} else if !*pause && *uri == "" {
-		log.Fatal("Spotify URI is required for playback.")
+		flag.Usage()
 	}
 
 	config.ReadConfig()
