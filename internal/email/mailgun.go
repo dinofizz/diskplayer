@@ -3,32 +3,19 @@ package email
 import (
 	"context"
 	"fmt"
+	"github.com/dinofizz/diskplayer/internal/config"
 	"github.com/mailgun/mailgun-go/v3"
-	"log"
-	"os"
 	"time"
 )
 
-const MAILGUN_API_KEY = "MAILGUN_API_KEY"
-const MAILGUN_DOMAIN = "MAILGUN_DOMAIN"
-const EMAIL_ADDRESS = "EMAIL_ADDRESS"
+const MAILGUN_API_KEY = "mailgun.api_key"
+const MAILGUN_DOMAIN = "mailgun.domain"
+const TO_ADDRESS = "mailgun.to_address"
 
 func SendAuthenticationUrlEmail(url string) (string, error) {
-	apiKey := os.Getenv(MAILGUN_API_KEY)
-	domain := os.Getenv(MAILGUN_DOMAIN)
-	to := os.Getenv(EMAIL_ADDRESS)
-
-	if apiKey == "" {
-		log.Fatalf("Environment variable %s is empty.", MAILGUN_API_KEY)
-	}
-
-	if domain == "" {
-		log.Fatalf("Environment variable %s is empty.", MAILGUN_DOMAIN)
-	}
-
-	if to == "" {
-		log.Fatalf("Environment variable %s is empty.", EMAIL_ADDRESS)
-	}
+	apiKey := config.GetConfigString(MAILGUN_API_KEY)
+	domain := config.GetConfigString(MAILGUN_DOMAIN)
+	to := config.GetConfigString(TO_ADDRESS)
 
 	from := fmt.Sprintf("Diskplayer <diskplayer@%s>", domain)
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/dinofizz/diskplayer/internal/config"
 	"github.com/dinofizz/diskplayer/internal/spotifyplayer"
 	"log"
 )
@@ -15,7 +16,11 @@ func main() {
 		log.Fatal("Please specify either [pause] OR [uri], but not both.")
 	} else if !*pause && *uri == "" {
 		log.Fatal("Spotify URI is required for playback.")
-	} else if *pause {
+	}
+
+	config.ReadConfig()
+
+	if *pause {
 		spotifyplayer.Pause()
 	} else {
 		spotifyplayer.Play(*uri)

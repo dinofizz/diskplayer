@@ -1,0 +1,12 @@
+spotify:
+  callback_url: YOUR_SPOTIFY_CALLBACK_URL
+  device_name: YOUR_SPOTIFY_DEVICE_NAME
+  client_id: YOUR_SPOTIFY_CLIENT_ID 
+  client_secret: YOUR_SPOTIFY_CLIENT_SECRET 
+mailgun:
+  api_key: YOUR_MAILGUN_API_KEY 
+  domain: YOUR_MAILGUN_DOMAIN
+  to_address: YOUR_TO_EMAIL_ADDRESS
+## optional token path below
+#token:
+#   path: /home/YOUR_USER/.config/diskplayer/token.json
