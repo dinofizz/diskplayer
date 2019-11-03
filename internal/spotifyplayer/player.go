@@ -7,8 +7,10 @@ import (
 	"github.com/dinofizz/diskplayer/internal/config"
 	"github.com/dinofizz/diskplayer/internal/email"
 	"github.com/dinofizz/diskplayer/internal/errorhandler"
+	"github.com/dinofizz/diskplayer/internal/server"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -29,27 +31,34 @@ const (
 	SPOTIFY_ID_ENV_VAR     = "SPOTIFY_ID"
 	SPOTIFY_SECRET_ENV_VAR = "SPOTIFY_SECRET"
 	TOKEN_PATH             = "token.path"
+	RECORD_PATH            = "recorder.file_path"
 )
 
-func Play(uri string) {
-	deviceName := config.GetConfigString(SPOTIFY_DEVICE_NAME)
+func Play() {
+	p := config.GetConfigString(RECORD_PATH)
+	u, err := ioutil.ReadFile(p)
+	errorhandler.HandleError(err)
+	PlayUri(string(u))
+}
 
-	if uri == "" {
+func PlayUri(u string) {
+	if u == "" {
 		log.Fatal("Spotify URI is required.")
 	}
 
-	spotifyUri := spotify.URI(uri)
+	spotifyUri := spotify.URI(u)
 
-	client := client()
+	c := client()
 
-	playerId := getPlayerId(client, deviceName)
+	d := config.GetConfigString(SPOTIFY_DEVICE_NAME)
+	id := getPlayerId(c, d)
 
-	playOptions := &spotify.PlayOptions{
-		DeviceID:        playerId,
+	o := &spotify.PlayOptions{
+		DeviceID:        id,
 		PlaybackContext: &spotifyUri,
 	}
 
-	err := client.PlayOpt(playOptions)
+	err := c.PlayOpt(o)
 	errorhandler.HandleError(err)
 }
 
@@ -60,48 +69,43 @@ func Pause() {
 
 func client() *spotify.Client {
 
-	var server *http.Server
+	var s *http.Server
 
-	token, err := tokenFromFile()
+	t, err := tokenFromFile()
 	if err != nil {
-		server = fetchNewToken()
+		s = fetchNewToken()
 	} else {
 		newAuthenticator()
-		client := auth.NewClient(token)
-		ch <- &client
+		c := auth.NewClient(t)
+		ch <- &c
 	}
 
-	client := <-ch
+	c := <-ch
 
-	if server != nil {
+	if s != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		err := server.Shutdown(ctx)
+		err := s.Shutdown(ctx)
 		errorhandler.HandleError(err)
 	}
 
-	return client
+	return c
 }
 
 func fetchNewToken() *http.Server {
 	newAuthenticator()
-	http.HandleFunc("/callback", completeAuth)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got request for:", r.URL.String())
-	})
-	server := &http.Server{Addr: ":8080", Handler: nil}
-	go server.ListenAndServe()
-	url := auth.AuthURL(state)
-	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-	_, err := email.SendAuthenticationUrlEmail(url)
+	s := server.RunCallbackServer(completeAuth)
+	u := auth.AuthURL(state)
+	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", u)
+	_, err := email.SendAuthenticationUrlEmail(u)
 	errorhandler.HandleError(err)
-	return server
+	return s
 }
 
 func newAuthenticator() {
-	redirectURI := config.GetConfigString(SPOTIFY_CALLBACK_URL)
-	clientId := config.GetConfigString(SPOTIFY_CLIENT_ID)
-	clientSecret := config.GetConfigString(SPOTIFY_CLIENT_SECRET)
+	r := config.GetConfigString(SPOTIFY_CALLBACK_URL)
+	id := config.GetConfigString(SPOTIFY_CLIENT_ID)
+	s := config.GetConfigString(SPOTIFY_CLIENT_SECRET)
 
 	// Unset any existing environment variables
 	err := os.Unsetenv(SPOTIFY_ID_ENV_VAR)
@@ -110,17 +114,17 @@ func newAuthenticator() {
 	errorhandler.HandleError(err)
 
 	// Set the environment variables required for Spotify auth
-	err = os.Setenv(SPOTIFY_ID_ENV_VAR, clientId)
+	err = os.Setenv(SPOTIFY_ID_ENV_VAR, id)
 	errorhandler.HandleError(err)
-	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, clientSecret)
+	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, s)
 	errorhandler.HandleError(err)
 
-	auth = spotify.NewAuthenticator(redirectURI, spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
+	auth = spotify.NewAuthenticator(r, spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {
-	tok, err := auth.Token(state, r)
+	t, err := auth.Token(state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
@@ -130,57 +134,57 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("State mismatch: %s != %s\n", st, state)
 	}
 
-	saveToken(tok)
+	saveToken(t)
 
-	client := auth.NewClient(tok)
+	c := auth.NewClient(t)
 	fmt.Fprintf(w, "Login Completed!")
-	ch <- &client
+	ch <- &c
 }
 
-func getPlayerId(client *spotify.Client, deviceName string) *spotify.ID {
-	devices, err := client.PlayerDevices()
+func getPlayerId(c *spotify.Client, n string) *spotify.ID {
+	ds, err := c.PlayerDevices()
 	errorhandler.HandleError(err)
 
-	var playerId *spotify.ID
-	for _, device := range devices {
-		if device.Name == deviceName {
-			playerId = &device.ID
-			if !device.Active {
-				err = client.TransferPlayback(*playerId, false)
+	var id *spotify.ID
+	for _, d := range ds {
+		if d.Name == n {
+			id = &d.ID
+			if !d.Active {
+				err = c.TransferPlayback(*id, false)
 				errorhandler.HandleError(err)
 			}
 		}
 	}
 
-	if playerId == nil {
+	if id == nil {
 		log.Fatal("Player not found.")
 	}
 
-	return playerId
+	return id
 }
 
 // Retrieves a token from a local file.
 func tokenFromFile() (*oauth2.Token, error) {
-	tokenpath := config.GetConfigString(TOKEN_PATH)
+	p := config.GetConfigString(TOKEN_PATH)
 
-	file, err := os.Open(tokenpath)
+	f, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	token := &oauth2.Token{}
-	err = json.NewDecoder(file).Decode(token)
-	return token, err
+	defer f.Close()
+	t := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(t)
+	return t, err
 }
 
 // Saves a token to a file path.
 func saveToken(token *oauth2.Token) {
-	tokenpath := config.GetConfigString(TOKEN_PATH)
+	p := config.GetConfigString(TOKEN_PATH)
 
-	file, err := os.OpenFile(tokenpath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Unable to cache oauth token: %v", err)
 	}
-	defer file.Close()
-	json.NewEncoder(file).Encode(token)
+	defer f.Close()
+	json.NewEncoder(f).Encode(token)
 }

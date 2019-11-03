@@ -7,6 +7,8 @@ mailgun:
   api_key: YOUR_MAILGUN_API_KEY 
   domain: YOUR_MAILGUN_DOMAIN
   to_address: YOUR_TO_EMAIL_ADDRESS
+recorder:
+  file_path: /tmp/diskplayer.contents
 ## optional token path below
 #token:
 #   path: /home/YOUR_USER/.config/diskplayer/token.json
