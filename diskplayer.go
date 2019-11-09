@@ -144,9 +144,12 @@ func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 		if d.Name == n {
 			id = &d.ID
 			if !d.Active {
+				err := c.Pause()
+				HandleError(err)
 				err = c.TransferPlayback(*id, false)
 				HandleError(err)
 			}
+			break
 		}
 	}
 
