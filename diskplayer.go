@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	state = "abc123"
-	auth  spotify.Authenticator
+	auth spotify.Authenticator
 )
 
 func Play() {
@@ -82,7 +81,7 @@ func fetchNewToken(ch chan *spotify.Client) *http.Server {
 	newAuthenticator()
 	h := CallbackHandler{ch: ch}
 	s := RunCallbackServer(h)
-	u := auth.AuthURL(state)
+	u := auth.AuthURL(STATE_IDENTIFIER)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", u)
 	_, err := SendAuthenticationUrlEmail(u)
 	HandleError(err)
@@ -118,14 +117,14 @@ type CallbackHandler struct {
 }
 
 func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t, err := auth.Token(state, r)
+	t, err := auth.Token(STATE_IDENTIFIER, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
 	}
-	if st := r.FormValue("state"); st != state {
+	if st := r.FormValue("state"); st != STATE_IDENTIFIER {
 		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, state)
+		log.Fatalf("State mismatch: %s != %s\n", st, STATE_IDENTIFIER)
 	}
 
 	saveToken(t)

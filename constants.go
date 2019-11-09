@@ -1,6 +1,7 @@
 package diskplayer
 
 const (
+	STATE_IDENTIFIER       = "abc123"
 	MAILGUN_API_KEY        = "mailgun.api_key"
 	MAILGUN_DOMAIN         = "mailgun.domain"
 	RECORD_PATH            = "recorder.file_path"
