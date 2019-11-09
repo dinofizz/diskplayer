@@ -1,10 +1,10 @@
-package server
+package diskplayer
 
 import (
-	"github.com/dinofizz/diskplayer/internal/recorder"
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type ErrorPage struct {
@@ -12,17 +12,23 @@ type ErrorPage struct {
 }
 
 func RunRecordServer() {
+	p := GetConfigString(RECORD_SERVER_PORT)
+
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.HandleFunc("/record", recordHandler)
-	http.ListenAndServe(":3000", nil)
+	http.ListenAndServe(":"+p, nil)
 }
 
-func RunCallbackServer(callback func(w http.ResponseWriter, r *http.Request)) *http.Server {
-	http.HandleFunc("/callback", callback)
+func RunCallbackServer(h http.Handler) *http.Server {
+	r := GetConfigString(SPOTIFY_CALLBACK_URL)
+	u, err := url.Parse(r)
+	HandleError(err)
+
+	http.Handle(u.EscapedPath(), h)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Got request for:", r.URL.String())
 	})
-	server := &http.Server{Addr: ":8080", Handler: nil}
+	server := &http.Server{Addr: ":" + u.Port(), Handler: nil}
 	go server.ListenAndServe()
 	return server
 }
@@ -30,7 +36,7 @@ func RunCallbackServer(callback func(w http.ResponseWriter, r *http.Request)) *h
 func recordHandler(w http.ResponseWriter, r *http.Request) {
 	webUrl := r.FormValue("web_url")
 	log.Println(webUrl)
-	e := recorder.Record(webUrl)
+	e := Record(webUrl)
 	if e != nil {
 		p := &ErrorPage{Body: []byte(e.Error())}
 		t, _ := template.ParseFiles("./static/error.html")

@@ -1,15 +1,10 @@
-package recorder
+package diskplayer
 
 import (
 	"errors"
 	"fmt"
-	"github.com/dinofizz/diskplayer/internal/config"
 	"io/ioutil"
 	"strings"
-)
-
-const (
-	RECORD_PATH = "recorder.file_path"
 )
 
 func Record(url string) error {
@@ -41,7 +36,7 @@ func createSpotifyUri(url string) (string, error) {
 }
 
 func writeToDisk(spotifyUri string) error {
-	p := config.GetConfigString(RECORD_PATH)
+	p := GetConfigString(RECORD_PATH)
 
 	b := []byte(spotifyUri)
 	e := ioutil.WriteFile(p, b, 0644)

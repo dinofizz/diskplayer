@@ -1,21 +1,17 @@
-package email
+package diskplayer
 
 import (
 	"context"
 	"fmt"
-	"github.com/dinofizz/diskplayer/internal/config"
 	"github.com/mailgun/mailgun-go/v3"
 	"time"
 )
 
-const MAILGUN_API_KEY = "mailgun.api_key"
-const MAILGUN_DOMAIN = "mailgun.domain"
-const TO_ADDRESS = "mailgun.to_address"
 
 func SendAuthenticationUrlEmail(url string) (string, error) {
-	apiKey := config.GetConfigString(MAILGUN_API_KEY)
-	domain := config.GetConfigString(MAILGUN_DOMAIN)
-	to := config.GetConfigString(TO_ADDRESS)
+	apiKey := GetConfigString(MAILGUN_API_KEY)
+	domain := GetConfigString(MAILGUN_DOMAIN)
+	to := GetConfigString(TO_ADDRESS)
 
 	from := fmt.Sprintf("Diskplayer <diskplayer@%s>", domain)
 

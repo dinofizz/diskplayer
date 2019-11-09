@@ -1,43 +1,28 @@
-package spotifyplayer
+package diskplayer
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/dinofizz/diskplayer/internal/config"
-	"github.com/dinofizz/diskplayer/internal/email"
-	"github.com/dinofizz/diskplayer/internal/errorhandler"
-	"github.com/dinofizz/diskplayer/internal/server"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
 
 var (
-	ch    = make(chan *spotify.Client, 1)
 	state = "abc123"
 	auth  spotify.Authenticator
 )
 
-const (
-	SPOTIFY_CALLBACK_URL   = "spotify.callback_url"
-	SPOTIFY_DEVICE_NAME    = "spotify.device_name"
-	SPOTIFY_CLIENT_ID      = "spotify.client_id"
-	SPOTIFY_CLIENT_SECRET  = "spotify.client_secret"
-	SPOTIFY_ID_ENV_VAR     = "SPOTIFY_ID"
-	SPOTIFY_SECRET_ENV_VAR = "SPOTIFY_SECRET"
-	TOKEN_PATH             = "token.path"
-	RECORD_PATH            = "recorder.file_path"
-)
-
 func Play() {
-	p := config.GetConfigString(RECORD_PATH)
+	p := GetConfigString(RECORD_PATH)
 	u, err := ioutil.ReadFile(p)
-	errorhandler.HandleError(err)
+	HandleError(err)
 	PlayUri(string(u))
 }
 
@@ -50,7 +35,7 @@ func PlayUri(u string) {
 
 	c := client()
 
-	d := config.GetConfigString(SPOTIFY_DEVICE_NAME)
+	d := GetConfigString(SPOTIFY_DEVICE_NAME)
 	id := getPlayerId(c, d)
 
 	o := &spotify.PlayOptions{
@@ -59,21 +44,22 @@ func PlayUri(u string) {
 	}
 
 	err := c.PlayOpt(o)
-	errorhandler.HandleError(err)
+	HandleError(err)
 }
 
 func Pause() {
 	err := client().Pause()
-	errorhandler.HandleError(err)
+	HandleError(err)
 }
 
 func client() *spotify.Client {
 
 	var s *http.Server
+	ch := make(chan *spotify.Client, 1)
 
 	t, err := tokenFromFile()
 	if err != nil {
-		s = fetchNewToken()
+		s = fetchNewToken(ch)
 	} else {
 		newAuthenticator()
 		c := auth.NewClient(t)
@@ -86,44 +72,52 @@ func client() *spotify.Client {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		err := s.Shutdown(ctx)
-		errorhandler.HandleError(err)
+		HandleError(err)
 	}
 
 	return c
 }
 
-func fetchNewToken() *http.Server {
+func fetchNewToken(ch chan *spotify.Client) *http.Server {
 	newAuthenticator()
-	s := server.RunCallbackServer(completeAuth)
+	h := CallbackHandler{ch: ch}
+	s := RunCallbackServer(h)
 	u := auth.AuthURL(state)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", u)
-	_, err := email.SendAuthenticationUrlEmail(u)
-	errorhandler.HandleError(err)
+	_, err := SendAuthenticationUrlEmail(u)
+	HandleError(err)
 	return s
 }
 
 func newAuthenticator() {
-	r := config.GetConfigString(SPOTIFY_CALLBACK_URL)
-	id := config.GetConfigString(SPOTIFY_CLIENT_ID)
-	s := config.GetConfigString(SPOTIFY_CLIENT_SECRET)
+	r := GetConfigString(SPOTIFY_CALLBACK_URL)
+	u, err := url.Parse(r)
+	HandleError(err)
+
+	id := GetConfigString(SPOTIFY_CLIENT_ID)
+	s := GetConfigString(SPOTIFY_CLIENT_SECRET)
 
 	// Unset any existing environment variables
-	err := os.Unsetenv(SPOTIFY_ID_ENV_VAR)
-	errorhandler.HandleError(err)
+	err = os.Unsetenv(SPOTIFY_ID_ENV_VAR)
+	HandleError(err)
 	err = os.Unsetenv(SPOTIFY_SECRET_ENV_VAR)
-	errorhandler.HandleError(err)
+	HandleError(err)
 
 	// Set the environment variables required for Spotify auth
 	err = os.Setenv(SPOTIFY_ID_ENV_VAR, id)
-	errorhandler.HandleError(err)
+	HandleError(err)
 	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, s)
-	errorhandler.HandleError(err)
+	HandleError(err)
 
-	auth = spotify.NewAuthenticator(r, spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
+	auth = spotify.NewAuthenticator(u.String(), spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
 }
 
-func completeAuth(w http.ResponseWriter, r *http.Request) {
+type CallbackHandler struct {
+	ch chan *spotify.Client
+}
+
+func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t, err := auth.Token(state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
@@ -138,12 +132,12 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 
 	c := auth.NewClient(t)
 	fmt.Fprintf(w, "Login Completed!")
-	ch <- &c
+	h.ch <- &c
 }
 
 func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 	ds, err := c.PlayerDevices()
-	errorhandler.HandleError(err)
+	HandleError(err)
 
 	var id *spotify.ID
 	for _, d := range ds {
@@ -151,7 +145,7 @@ func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 			id = &d.ID
 			if !d.Active {
 				err = c.TransferPlayback(*id, false)
-				errorhandler.HandleError(err)
+				HandleError(err)
 			}
 		}
 	}
@@ -165,7 +159,7 @@ func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 
 // Retrieves a token from a local file.
 func tokenFromFile() (*oauth2.Token, error) {
-	p := config.GetConfigString(TOKEN_PATH)
+	p := GetConfigString(TOKEN_PATH)
 
 	f, err := os.Open(p)
 	if err != nil {
@@ -179,7 +173,7 @@ func tokenFromFile() (*oauth2.Token, error) {
 
 // Saves a token to a file path.
 func saveToken(token *oauth2.Token) {
-	p := config.GetConfigString(TOKEN_PATH)
+	p := GetConfigString(TOKEN_PATH)
 
 	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {

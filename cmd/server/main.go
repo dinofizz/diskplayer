@@ -1,13 +1,10 @@
 package main
 
 import (
-	"github.com/dinofizz/diskplayer/internal/config"
-	"github.com/dinofizz/diskplayer/internal/server"
+	"github.com/dinofizz/diskplayer"
 )
 
-
 func main() {
-	config.ReadConfig()
-	server.RunRecordServer()
+	diskplayer.ReadConfig()
+	diskplayer.RunRecordServer()
 }
-
