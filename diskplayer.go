@@ -14,10 +14,6 @@ import (
 	"time"
 )
 
-var (
-	auth spotify.Authenticator
-)
-
 func Play() {
 	p := GetConfigString(RECORD_PATH)
 	u, err := ioutil.ReadFile(p)
@@ -60,7 +56,7 @@ func client() *spotify.Client {
 	if err != nil {
 		s = fetchNewToken(ch)
 	} else {
-		newAuthenticator()
+		auth := newAuthenticator()
 		c := auth.NewClient(t)
 		ch <- &c
 	}
@@ -78,8 +74,8 @@ func client() *spotify.Client {
 }
 
 func fetchNewToken(ch chan *spotify.Client) *http.Server {
-	newAuthenticator()
-	h := CallbackHandler{ch: ch}
+	auth := newAuthenticator()
+	h := CallbackHandler{ch: ch, auth: &auth}
 	s := RunCallbackServer(h)
 	u := auth.AuthURL(STATE_IDENTIFIER)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", u)
@@ -88,7 +84,7 @@ func fetchNewToken(ch chan *spotify.Client) *http.Server {
 	return s
 }
 
-func newAuthenticator() {
+func newAuthenticator() spotify.Authenticator {
 	r := GetConfigString(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
 	HandleError(err)
@@ -108,16 +104,17 @@ func newAuthenticator() {
 	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, s)
 	HandleError(err)
 
-	auth = spotify.NewAuthenticator(u.String(), spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
+	return spotify.NewAuthenticator(u.String(), spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
 }
 
 type CallbackHandler struct {
-	ch chan *spotify.Client
+	ch   chan *spotify.Client
+	auth *spotify.Authenticator
 }
 
 func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t, err := auth.Token(STATE_IDENTIFIER, r)
+	t, err := h.auth.Token(STATE_IDENTIFIER, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
@@ -129,7 +126,7 @@ func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	saveToken(t)
 
-	c := auth.NewClient(t)
+	c := h.auth.NewClient(t)
 	fmt.Fprintf(w, "Login Completed!")
 	h.ch <- &c
 }
