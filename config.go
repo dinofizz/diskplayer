@@ -12,6 +12,8 @@ func ReadConfig() {
 	viper.AddConfigPath("$HOME/.config/diskplayer/")
 	viper.AddConfigPath(".")
 	viper.SetDefault("token.path", "token.json")
+	viper.SetDefault("spotify.callback_url", "http://localhost:8080/callback")
+	viper.SetDefault("recorder.server_port", "3000")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s \n", err))

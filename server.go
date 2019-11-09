@@ -22,7 +22,9 @@ func RunRecordServer() {
 func RunCallbackServer(h http.Handler) *http.Server {
 	r := GetConfigString(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
-	HandleError(err)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	http.Handle(u.EscapedPath(), h)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

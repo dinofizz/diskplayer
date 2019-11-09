@@ -17,7 +17,7 @@ import (
 func Play() {
 	p := GetConfigString(RECORD_PATH)
 	u, err := ioutil.ReadFile(p)
-	HandleError(err)
+	handleError(err)
 	PlayUri(string(u))
 }
 
@@ -39,12 +39,12 @@ func PlayUri(u string) {
 	}
 
 	err := c.PlayOpt(o)
-	HandleError(err)
+	handleError(err)
 }
 
 func Pause() {
 	err := client().Pause()
-	HandleError(err)
+	handleError(err)
 }
 
 func client() *spotify.Client {
@@ -67,7 +67,7 @@ func client() *spotify.Client {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		err := s.Shutdown(ctx)
-		HandleError(err)
+		handleError(err)
 	}
 
 	return c
@@ -79,30 +79,28 @@ func fetchNewToken(ch chan *spotify.Client) *http.Server {
 	s := RunCallbackServer(h)
 	u := auth.AuthURL(STATE_IDENTIFIER)
 	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", u)
-	_, err := SendAuthenticationUrlEmail(u)
-	HandleError(err)
 	return s
 }
 
 func newAuthenticator() spotify.Authenticator {
 	r := GetConfigString(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
-	HandleError(err)
+	handleError(err)
 
 	id := GetConfigString(SPOTIFY_CLIENT_ID)
 	s := GetConfigString(SPOTIFY_CLIENT_SECRET)
 
 	// Unset any existing environment variables
 	err = os.Unsetenv(SPOTIFY_ID_ENV_VAR)
-	HandleError(err)
+	handleError(err)
 	err = os.Unsetenv(SPOTIFY_SECRET_ENV_VAR)
-	HandleError(err)
+	handleError(err)
 
 	// Set the environment variables required for Spotify auth
 	err = os.Setenv(SPOTIFY_ID_ENV_VAR, id)
-	HandleError(err)
+	handleError(err)
 	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, s)
-	HandleError(err)
+	handleError(err)
 
 	return spotify.NewAuthenticator(u.String(), spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
@@ -133,7 +131,7 @@ func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 	ds, err := c.PlayerDevices()
-	HandleError(err)
+	handleError(err)
 
 	var id *spotify.ID
 	for _, d := range ds {
@@ -141,9 +139,9 @@ func getPlayerId(c *spotify.Client, n string) *spotify.ID {
 			id = &d.ID
 			if !d.Active {
 				err := c.Pause()
-				HandleError(err)
+				handleError(err)
 				err = c.TransferPlayback(*id, false)
-				HandleError(err)
+				handleError(err)
 			}
 			break
 		}
@@ -180,4 +178,10 @@ func saveToken(token *oauth2.Token) {
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
+}
+
+func handleError(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
 }
