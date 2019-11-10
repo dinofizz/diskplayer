@@ -45,7 +45,6 @@ func RunCallbackServer(h http.Handler) *http.Server {
 // If the recording is successful, redirection to a success page occurs, otherwise an error page is returned.
 func recordHandler(w http.ResponseWriter, r *http.Request) {
 	webUrl := r.FormValue("web_url")
-	log.Println(webUrl)
 	e := Record(webUrl)
 	if e != nil {
 		p := &ErrorPage{Body: []byte(e.Error())}
