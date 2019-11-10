@@ -103,7 +103,33 @@ func Pause() error {
 	if err != nil {
 		return err
 	}
-	return c.Pause()
+
+	n := ConfigValue(SPOTIFY_DEVICE_NAME)
+	ds, err := c.PlayerDevices()
+	if err != nil {
+		return err
+	}
+
+	activeID, err := activePlayerId(&ds, c)
+	if err != nil {
+		return err
+	} else if activeID == nil {
+		return nil
+	}
+
+	playerID, err := disklayerId(&ds, c, n)
+	if err != nil {
+		return err
+	}
+
+	if *activeID == *playerID {
+		err := c.Pause()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func client() (*spotify.Client, error) {
