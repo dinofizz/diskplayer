@@ -15,11 +15,17 @@ import (
 	"time"
 )
 
+// Play will play an album or playlist by reading a Spotify URI from a file whose filepath is defined in the
+// diskplayer.yaml configuration file under the recorder.file_path.
+// An error is returned if one is encountered.
 func Play() error {
 	p := ConfigValue(RECORD_PATH)
 	return PlayPath(p)
 }
 
+// PlayPath will play an album or playlist by reading a Spotify URI from a file whose filepath is passed into the
+// function.
+// An error is returned if one is encountered.
 func PlayPath(p string) error {
 	f, err := os.Open(p)
 	if err != nil {
@@ -41,6 +47,8 @@ func PlayPath(p string) error {
 	return PlayUri(string(l))
 }
 
+// PlayURI will play the album or playlist Spotify URI that is passed in to the function.
+// An error is returned if one is encountered.
 func PlayUri(u string) error {
 	if u == "" {
 		return errors.New("spotify URI is required")
@@ -88,6 +96,8 @@ func PlayUri(u string) error {
 	return c.PlayOpt(o)
 }
 
+// Pause will pause the Spotify playback if the Diskplayer is the currently active Spotify device.
+// An error is returned if one is encountered.
 func Pause() error {
 	c, err := client()
 	if err != nil {
@@ -231,7 +241,6 @@ func disklayerId(ds *[]spotify.PlayerDevice, c *spotify.Client, n string) (*spot
 	return id, nil
 }
 
-// Retrieves a token from a local file.
 func tokenFromFile() (*oauth2.Token, error) {
 	p := ConfigValue(TOKEN_PATH)
 
@@ -245,7 +254,6 @@ func tokenFromFile() (*oauth2.Token, error) {
 	return t, err
 }
 
-// Saves a token to a file path.
 func saveToken(token *oauth2.Token) error {
 	p := ConfigValue(TOKEN_PATH)
 
