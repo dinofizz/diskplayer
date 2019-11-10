@@ -1,13 +1,13 @@
 package diskplayer
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -17,11 +17,28 @@ import (
 
 func Play() error {
 	p := ConfigValue(RECORD_PATH)
-	u, err := ioutil.ReadFile(p)
+	return PlayPath(p)
+}
+
+func PlayPath(p string) error {
+	f, err := os.Open(p)
 	if err != nil {
 		return err
 	}
-	return PlayUri(string(u))
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	var l string
+	for s.Scan() {
+		l = s.Text()
+		break // only interested in one line
+	}
+
+	if l == "" {
+		return fmt.Errorf("unable to read line from path: %s", p)
+	}
+
+	return PlayUri(string(l))
 }
 
 func PlayUri(u string) error {
