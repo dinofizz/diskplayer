@@ -36,7 +36,7 @@ func createSpotifyUri(url string) (string, error) {
 }
 
 func writeToDisk(spotifyUri string) error {
-	p := GetConfigString(RECORD_PATH)
+	p := ConfigValue(RECORD_PATH)
 
 	b := []byte(spotifyUri)
 	err := ioutil.WriteFile(p, b, 0644)

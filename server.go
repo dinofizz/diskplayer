@@ -12,7 +12,7 @@ type ErrorPage struct {
 }
 
 func RunRecordServer() {
-	p := GetConfigString(RECORD_SERVER_PORT)
+	p := ConfigValue(RECORD_SERVER_PORT)
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.HandleFunc("/record", recordHandler)
@@ -20,7 +20,7 @@ func RunRecordServer() {
 }
 
 func RunCallbackServer(h http.Handler) *http.Server {
-	r := GetConfigString(SPOTIFY_CALLBACK_URL)
+	r := ConfigValue(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
 	if err != nil {
 		log.Fatal(err)

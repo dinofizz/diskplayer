@@ -20,7 +20,7 @@ func ReadConfig() {
 	}
 }
 
-func GetConfigString(key string) string {
+func ConfigValue(key string) string {
 	value := viper.GetString(key)
 	if value == "" {
 		log.Fatalf("Configuration value \"%s\" is empty.", key)
