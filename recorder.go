@@ -8,14 +8,14 @@ import (
 )
 
 func Record(url string) error {
-	s, e := createSpotifyUri(url)
-	if e != nil {
-		return e
+	s, err := createSpotifyUri(url)
+	if err != nil {
+		return err
 	}
 
-	e = writeToDisk(s)
-	if e != nil {
-		return e
+	err = writeToDisk(s)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -39,9 +39,9 @@ func writeToDisk(spotifyUri string) error {
 	p := GetConfigString(RECORD_PATH)
 
 	b := []byte(spotifyUri)
-	e := ioutil.WriteFile(p, b, 0644)
-	if e != nil {
-		return e
+	err := ioutil.WriteFile(p, b, 0644)
+	if err != nil {
+		return err
 	}
 
 	return nil

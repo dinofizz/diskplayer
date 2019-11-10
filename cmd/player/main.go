@@ -22,11 +22,16 @@ func main() {
 
 	diskplayer.ReadConfig()
 
+	var err error
 	if *pause {
-		diskplayer.Pause()
+		err = diskplayer.Pause()
 	} else if *uri != "" {
-		diskplayer.PlayUri(*uri)
+		err = diskplayer.PlayUri(*uri)
 	} else {
-		diskplayer.Play()
+		err = diskplayer.Play()
+	}
+
+	if err != nil {
+		log.Fatal(err)
 	}
 }
