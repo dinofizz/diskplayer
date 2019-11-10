@@ -16,7 +16,7 @@ import (
 )
 
 // Play will play an album or playlist by reading a Spotify URI from a file whose filepath is defined in the
-// diskplayer.yaml configuration file under the recorder.file_path.
+// diskplayer.yaml configuration file under the recorder.file_path entry.
 // An error is returned if one is encountered.
 func Play() error {
 	p := ConfigValue(RECORD_PATH)
@@ -67,17 +67,17 @@ func PlayUri(u string) error {
 		return err
 	}
 
-	playerID, err := disklayerId(&ds, c, n)
-	if err != nil {
-		return err
+	activeID := activePlayerId(&ds, c)
+	if activeID == nil {
+		return nil
 	}
 
-	activeID, err := activePlayerId(&ds, c)
-	if err != nil {
-		return err
+	playerID := disklayerId(&ds, c, n)
+	if playerID == nil {
+		return fmt.Errorf("client identified by %s not found", n)
 	}
 
-	if activeID != nil && *activeID != *playerID {
+	if *activeID != *playerID {
 		err := c.Pause()
 		if err != nil {
 			return err
@@ -110,16 +110,14 @@ func Pause() error {
 		return err
 	}
 
-	activeID, err := activePlayerId(&ds, c)
-	if err != nil {
-		return err
-	} else if activeID == nil {
+	activeID := activePlayerId(&ds, c)
+	if activeID == nil {
 		return nil
 	}
 
-	playerID, err := disklayerId(&ds, c, n)
-	if err != nil {
-		return err
+	playerID := disklayerId(&ds, c, n)
+	if playerID == nil {
+		return fmt.Errorf("client identified by %s not found", n)
 	}
 
 	if *activeID == *playerID {
@@ -132,6 +130,7 @@ func Pause() error {
 	return nil
 }
 
+// Returns an authenticated Spotify client object, or an error if encountered.
 func client() (*spotify.Client, error) {
 
 	var s *http.Server
@@ -167,6 +166,8 @@ func client() (*spotify.Client, error) {
 	return c, nil
 }
 
+// fetchNewToken will prompt the user to log in to Spotify to obtain a new authentication token.
+// Returns the server object which is waiting for the callback request or any error encountered.
 func fetchNewToken(ch chan *spotify.Client) (*http.Server, error) {
 	auth, err := newAuthenticator()
 	if err != nil {
@@ -179,6 +180,9 @@ func fetchNewToken(ch chan *spotify.Client) (*http.Server, error) {
 	return s, nil
 }
 
+// newAuthenticator returns a new Spotify client authenticator object configured using the values specified in the
+// diskplayer.yaml configuration file.
+// Returns a new Spotify Authenticator object or any error encountered.
 func newAuthenticator() (*spotify.Authenticator, error) {
 	r := ConfigValue(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
@@ -220,6 +224,7 @@ type CallbackHandler struct {
 	auth *spotify.Authenticator
 }
 
+// An implementation of the Handler ServeHTTP function for the CallbackHandler struct.
 func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t, err := h.auth.Token(STATE_IDENTIFIER, r)
 	if err != nil {
@@ -241,7 +246,9 @@ func (h CallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ch <- &c
 }
 
-func activePlayerId(ds *[]spotify.PlayerDevice, c *spotify.Client) (*spotify.ID, error) {
+// activePlayerIds iterates through the provided player devices and returns the active ID. If there is no active
+// Spotify client device the ID will be returned as a nil pointer.
+func activePlayerId(ds *[]spotify.PlayerDevice, c *spotify.Client) *spotify.ID {
 	var id *spotify.ID
 	for _, d := range *ds {
 		if d.Active {
@@ -249,10 +256,12 @@ func activePlayerId(ds *[]spotify.PlayerDevice, c *spotify.Client) (*spotify.ID,
 		}
 	}
 
-	return id, nil
+	return id
 }
 
-func disklayerId(ds *[]spotify.PlayerDevice, c *spotify.Client, n string) (*spotify.ID, error) {
+// diskplayerId returns the Spotify ID for the Spotify client whose name is provided in the parameter list,
+// or a nil pointer if no matching device is found.
+func disklayerId(ds *[]spotify.PlayerDevice, c *spotify.Client, n string) *spotify.ID {
 	var id *spotify.ID
 	for _, d := range *ds {
 		if d.Name == n {
@@ -260,13 +269,12 @@ func disklayerId(ds *[]spotify.PlayerDevice, c *spotify.Client, n string) (*spot
 		}
 	}
 
-	if id == nil {
-		return nil, errors.New("Player not found")
-	}
-
-	return id, nil
+	return id
 }
 
+// tokenFromFile will attempt to deserialize a token whose path is defined in the diskplayer.
+// yaml configuration file under the token.file_path field.
+// Returns a pointer to an oauth2 token object or any error encountered.
 func tokenFromFile() (*oauth2.Token, error) {
 	p := ConfigValue(TOKEN_PATH)
 
@@ -280,6 +288,9 @@ func tokenFromFile() (*oauth2.Token, error) {
 	return t, err
 }
 
+// saveToken will serialize the provided token and save it to the file whose path is defined in the diskplayer.
+// yaml configuration file under the token.file_path field.
+// Returns an error if one is encountered.
 func saveToken(token *oauth2.Token) error {
 	p := ConfigValue(TOKEN_PATH)
 

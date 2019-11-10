@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// ReadConfig reads in the configuration values from the diskplayer.yaml configuration file.
 func ReadConfig() {
 	viper.SetConfigName("diskplayer")
 	viper.AddConfigPath("/etc/diskplayer/")
@@ -20,6 +21,8 @@ func ReadConfig() {
 	}
 }
 
+// ConfigValue returns the configuration value identified by the provided key.
+// If none is found the application quits with an error message and exit code 1.
 func ConfigValue(key string) string {
 	value := viper.GetString(key)
 	if value == "" {
