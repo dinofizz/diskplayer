@@ -86,7 +86,11 @@ func client() (*spotify.Client, error) {
 
 	t, err := tokenFromFile()
 	if err != nil {
-		s, _ = fetchNewToken(ch)
+		if err == err.(*os.PathError) {
+			s, _ = fetchNewToken(ch)
+		} else {
+			return nil, err
+		}
 	} else {
 		auth, err := newAuthenticator()
 		if err != nil {
