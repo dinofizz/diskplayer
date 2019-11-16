@@ -11,7 +11,7 @@ import (
 // Play will play an album or playlist by reading a Spotify URI from a file whose filepath is defined in the
 // diskplayer.yaml configuration file under the recorder.file_path entry.
 // An error is returned if one is encountered.
-func Play(c *SpotifyClient) error {
+func Play(c Client) error {
 	p := ConfigValue(RECORD_PATH)
 	return PlayPath(c, p)
 }
@@ -19,7 +19,7 @@ func Play(c *SpotifyClient) error {
 // PlayPath will play an album or playlist by reading a Spotify URI from a file whose filepath is passed into the
 // function.
 // An error is returned if one is encountered.
-func PlayPath(c *SpotifyClient, p string) error {
+func PlayPath(c Client, p string) error {
 	f, err := os.Open(p)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func PlayPath(c *SpotifyClient, p string) error {
 
 // PlayURI will play the album or playlist Spotify URI that is passed in to the function.
 // An error is returned if one is encountered.
-func PlayUri(c *SpotifyClient, u string) error {
+func PlayUri(c Client, u string) error {
 	if u == "" {
 		return errors.New("spotify URI is required")
 	}
@@ -56,16 +56,13 @@ func PlayUri(c *SpotifyClient, u string) error {
 	}
 
 	activeID := activePlayerId(&ds)
-	if activeID == nil {
-		return nil
-	}
 
 	playerID := diskplayerId(&ds, n)
 	if playerID == nil {
 		return fmt.Errorf("client identified by %s not found", n)
 	}
 
-	if *activeID != *playerID {
+	if activeID != nil && *activeID != *playerID {
 		err := c.Pause()
 		if err != nil {
 			return err
@@ -86,7 +83,7 @@ func PlayUri(c *SpotifyClient, u string) error {
 
 // Pause will pause the Spotify playback if the Diskplayer is the currently active Spotify device.
 // An error is returned if one is encountered.
-func Pause(c *SpotifyClient) error {
+func Pause(c Client) error {
 	n := ConfigValue(SPOTIFY_DEVICE_NAME)
 	ds, err := c.PlayerDevices()
 	if err != nil {
