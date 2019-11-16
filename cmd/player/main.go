@@ -28,15 +28,19 @@ func main() {
 
 	diskplayer.ReadConfig()
 
-	var err error
+	c, err := diskplayer.NewClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *pause {
-		err = diskplayer.Pause()
+		err = diskplayer.Pause(c)
 	} else if *uri != "" {
-		err = diskplayer.PlayUri(*uri)
+		err = diskplayer.PlayUri(c, *uri)
 	} else if *path != "" {
-		err = diskplayer.PlayPath(*path)
+		err = diskplayer.PlayPath(c, *path)
 	} else {
-		err = diskplayer.Play()
+		err = diskplayer.Play(c)
 	}
 
 	if err != nil {
