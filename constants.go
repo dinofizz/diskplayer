@@ -1,6 +1,7 @@
 package diskplayer
 
 const (
+	DEFAULT_CONFIG_NAME    = "diskplayer"
 	STATE_IDENTIFIER       = "abc123"
 	RECORD_PATH            = "recorder.file_path"
 	RECORD_SERVER_PORT     = "recorder.server_port"

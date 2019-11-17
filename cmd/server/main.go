@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-	diskplayer.ReadConfig()
+	diskplayer.ReadConfig(diskplayer.DEFAULT_CONFIG_NAME)
 	diskplayer.RunRecordServer()
 }

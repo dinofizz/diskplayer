@@ -1,0 +1,8 @@
+spotify:
+  callback_url: http://localhost:8080/callback
+  device_name: my_device_name
+  client_id: my_client_id
+  client_secret: my_client_secret
+recorder:
+  server_port: 3000
+  file_path: /tmp/diskplayer.contents

@@ -7,8 +7,8 @@ import (
 )
 
 // ReadConfig reads in the configuration values from the diskplayer.yaml configuration file.
-func ReadConfig() {
-	viper.SetConfigName("diskplayer")
+func ReadConfig(n string) {
+	viper.SetConfigName(n)
 	viper.AddConfigPath("/etc/diskplayer/")
 	viper.AddConfigPath("$HOME/.config/diskplayer/")
 	viper.AddConfigPath(".")

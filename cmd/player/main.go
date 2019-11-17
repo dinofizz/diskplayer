@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+
 func main() {
 	uri := flag.String("uri", "", "Spotify URI of album/playlist to play.")
 	path := flag.String("path", "", "Path to file containing Spotify URI to play.")
@@ -26,7 +27,7 @@ func main() {
 		log.Fatal("Please specify either [uri] or [path], but not both.")
 	}
 
-	diskplayer.ReadConfig()
+	diskplayer.ReadConfig(diskplayer.DEFAULT_CONFIG_NAME)
 
 	c, err := diskplayer.NewClient()
 	if err != nil {
