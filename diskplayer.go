@@ -58,23 +58,23 @@ func PlayUri(c Client, u string) error {
 	activeID := activePlayerId(&ds)
 
 	playerID := diskplayerId(&ds, n)
-	if playerID == nil {
+	if playerID == "" {
 		return fmt.Errorf("client identified by %s not found", n)
 	}
 
-	if activeID != nil && *activeID != *playerID {
+	if activeID != "" && activeID != playerID {
 		err := c.Pause()
 		if err != nil {
 			return err
 		}
-		err = c.TransferPlayback(*playerID, false)
+		err = c.TransferPlayback(playerID, false)
 		if err != nil {
 			return err
 		}
 	}
 
 	o := &spotify.PlayOptions{
-		DeviceID:        playerID,
+		DeviceID:        &playerID,
 		PlaybackContext: &spotifyUri,
 	}
 
@@ -91,16 +91,16 @@ func Pause(c Client) error {
 	}
 
 	activeID := activePlayerId(&ds)
-	if activeID == nil {
+	if activeID == "" {
 		return nil
 	}
 
 	playerID := diskplayerId(&ds, n)
-	if playerID == nil {
+	if playerID == "" {
 		return fmt.Errorf("client identified by %s not found", n)
 	}
 
-	if *activeID == *playerID {
+	if activeID == playerID {
 		err := c.Pause()
 		if err != nil {
 			return err
@@ -112,26 +112,24 @@ func Pause(c Client) error {
 
 // activePlayerIds iterates through the provided player devices and returns the active ID. If there is no active
 // Spotify client device the ID will be returned as a nil pointer.
-func activePlayerId(ds *[]spotify.PlayerDevice) *spotify.ID {
-	var id *spotify.ID
+func activePlayerId(ds *[]spotify.PlayerDevice) spotify.ID {
 	for _, d := range *ds {
 		if d.Active {
-			id = &d.ID
+			return d.ID
 		}
 	}
 
-	return id
+	return ""
 }
 
 // diskplayerId returns the Spotify ID for the Spotify client whose name is provided in the parameter list,
 // or a nil pointer if no matching device is found.
-func diskplayerId(ds *[]spotify.PlayerDevice, n string) *spotify.ID {
-	var id *spotify.ID
+func diskplayerId(ds *[]spotify.PlayerDevice, n string) spotify.ID {
 	for _, d := range *ds {
 		if d.Name == n {
-			id = &d.ID
+			return d.ID
 		}
 	}
 
-	return id
+	return ""
 }
