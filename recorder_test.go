@@ -16,8 +16,8 @@ var recordTests = []struct {
 }{
 	{"https://open.spotify.com/album/1S7mumn7D4riEX2gVWYgPO", "spotify:album:1S7mumn7D4riEX2gVWYgPO", ""},
 	{"https://open.spotify.com/playlist/5XsXwH5uWdhpAWsigjWMTA", "spotify:playlist:5XsXwH5uWdhpAWsigjWMTA", ""},
-	{"https://open.spotify.complaylist/5XsXwH5uWdhpAWsigjWMTA", "",
-		"URL represents neither album nor playlist: https://open.spotify.complaylist/5XsXwH5uWdhpAWsigjWMTA"},
+	{"florble", "",
+		"URL represents neither album nor playlist: florble"},
 }
 
 func TestRecord(t *testing.T) {
