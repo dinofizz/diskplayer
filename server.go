@@ -15,7 +15,6 @@ type ErrorPage struct {
 
 type DiskplayerServer interface {
 	RunRecordServer() error
-	//RunCallbackServer(h http.Handler) (*http.Server, error)
 	RunCallbackServer() (*http.Server, error)
 	TokenChannel() chan *oauth2.Token
 	Authenticator() *spotify.Authenticator
