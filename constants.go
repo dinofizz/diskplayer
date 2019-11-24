@@ -9,7 +9,5 @@ const (
 	SPOTIFY_CLIENT_ID      = "spotify.client_id"
 	SPOTIFY_CLIENT_SECRET  = "spotify.client_secret"
 	SPOTIFY_DEVICE_NAME    = "spotify.device_name"
-	SPOTIFY_ID_ENV_VAR     = "SPOTIFY_ID"
-	SPOTIFY_SECRET_ENV_VAR = "SPOTIFY_SECRET"
 	TOKEN_PATH             = "token.path"
 )

@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// NewAuthenticator returns a Spotify authenticator object configured with the required callback URL,
+// client IT and client secret. An error is returned if one is encountered
 func NewAuthenticator() (*spotify.Authenticator, error) {
 	r := ConfigValue(SPOTIFY_CALLBACK_URL)
 	u, err := url.Parse(r)
@@ -21,32 +23,17 @@ func NewAuthenticator() (*spotify.Authenticator, error) {
 	id := ConfigValue(SPOTIFY_CLIENT_ID)
 	s := ConfigValue(SPOTIFY_CLIENT_SECRET)
 
-	// Unset any existing environment variables
-	err = os.Unsetenv(SPOTIFY_ID_ENV_VAR)
-	if err != nil {
-		return nil, err
-	}
-	err = os.Unsetenv(SPOTIFY_SECRET_ENV_VAR)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set the environment variables required for Spotify auth
-	err = os.Setenv(SPOTIFY_ID_ENV_VAR, id)
-	if err != nil {
-		return nil, err
-	}
-	err = os.Setenv(SPOTIFY_SECRET_ENV_VAR, s)
-	if err != nil {
-		return nil, err
-	}
-
 	auth := spotify.NewAuthenticator(u.String(), spotify.ScopeUserReadPrivate, spotify.ScopePlaylistReadPrivate,
 		spotify.ScopeUserModifyPlaybackState, spotify.ScopeUserReadPlaybackState)
+
+	auth.SetAuthInfo(id, s)
 
 	return &auth, nil
 }
 
+// NewToken will create a new OAuth2 token request.
+// The user will be prompted to visit a URL, and after access is granted a new OAuth2 token is returned.
+// An error is returned if encountered.
 func NewToken(ds DiskplayerServer) (*oauth2.Token, error) {
 	s, err := ds.RunCallbackServer()
 	if err != nil {
@@ -68,8 +55,8 @@ func NewToken(ds DiskplayerServer) (*oauth2.Token, error) {
 	return t, nil
 }
 
-// ReadToken will attempt to deserialize a token whose path is defined in the diskplayer.
-// yaml configuration file under the token.file_path field.
+// ReadToken will attempt to deserialize a token whose path is defined in the diskplayer.yaml
+// configuration file under the token.file_path field.
 // Returns a pointer to an oauth2 token object or any error encountered.
 func ReadToken() (*oauth2.Token, error) {
 	p := ConfigValue(TOKEN_PATH)
@@ -84,8 +71,8 @@ func ReadToken() (*oauth2.Token, error) {
 	return t, err
 }
 
-// SaveToken will serialize the provided token and save it to the file whose path is defined in the diskplayer.
-// yaml configuration file under the token.file_path field.
+// SaveToken will serialize the provided token and save it to the file whose path is defined in the diskplayer. yaml
+// configuration file under the token.file_path field.
 // Returns an error if one is encountered.
 func SaveToken(token *oauth2.Token) error {
 	p := ConfigValue(TOKEN_PATH)
