@@ -28,9 +28,8 @@ func PlayPath(c Client, p string) error {
 
 	s := bufio.NewScanner(f)
 	var l string
-	for s.Scan() {
+	if s.Scan() {
 		l = s.Text()
-		break // only interested in one line
 	}
 
 	if l == "" {
