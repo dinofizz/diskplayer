@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dinofizz/diskplayer/mocks"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/zmb3/spotify"
 	"os"
@@ -32,10 +33,9 @@ func TestPlaySuccess(t *testing.T) {
 	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
 
 	err := Play(m)
-	if err != nil {
-		t.Errorf("Play failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
+
 func TestPlayUriSuccess(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
@@ -56,9 +56,7 @@ func TestPlayUriSuccess(t *testing.T) {
 	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
 
 	err := PlayUri(m, "foobar")
-	if err != nil {
-		t.Errorf("PlayUri failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPlayPathSuccess(t *testing.T) {
@@ -81,9 +79,7 @@ func TestPlayPathSuccess(t *testing.T) {
 	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
 
 	err := PlayPath(m, "./test-fixtures/diskplayer.contents")
-	if err != nil {
-		t.Errorf("PlayPath failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPlayPathInvalidPath(t *testing.T) {
@@ -97,17 +93,13 @@ func TestPlayPathInvalidPath(t *testing.T) {
 func TestPlayPathEmptyFileError(t *testing.T) {
 	m := new(mocks.Client)
 	err := PlayPath(m, "./test-fixtures/empty.contents")
-	if err == nil || err.Error() != "unable to read line from path: ./test-fixtures/empty.contents" {
-		t.Error("PlayPath was expected to fail when reading an empty file.")
-	}
+	assert.EqualError(t, err, "unable to read line from path: ./test-fixtures/empty.contents")
 }
 
 func TestPlayUriNoUriError(t *testing.T) {
 	m := new(mocks.Client)
 	err := PlayUri(m, "")
-	if err == nil || err.Error() != "spotify URI is required" {
-		t.Error("PlayUri was expected to fail when provided an empty URI.")
-	}
+	assert.EqualError(t, err, "spotify URI is required")
 }
 
 func TestPlayUrPlayerDevicesError(t *testing.T) {
@@ -120,9 +112,7 @@ func TestPlayUrPlayerDevicesError(t *testing.T) {
 
 	m.On("PlayerDevices").Return(ds, errors.New(e))
 	err := PlayUri(m, "dummy_uri")
-	if err == nil || err.Error() != e {
-		t.Error("PlayUri was expected to return error fetching PlayerDevices")
-	}
+	assert.EqualError(t, err, e)
 }
 
 func TestPlayUriDeviceNotFoundError(t *testing.T) {
@@ -145,9 +135,7 @@ func TestPlayUriDeviceNotFoundError(t *testing.T) {
 	m.On("PlayerDevices").Return(ds, nil)
 
 	err := PlayUri(m, "foobar")
-	if err == nil || err.Error() != fmt.Sprintf("client identified by %s not found", n) {
-		t.Error("PlayUri was expected to return error when the device name was not found.")
-	}
+	assert.EqualError(t, err, fmt.Sprintf("client identified by %s not found", n))
 }
 
 func TestPlayUriTransferPlaybackSuccess(t *testing.T) {
@@ -181,9 +169,7 @@ func TestPlayUriTransferPlaybackSuccess(t *testing.T) {
 	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
 
 	err := PlayUri(m, "foobar")
-	if err != nil {
-		t.Errorf("PlayUri failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPlayUriTransferPlaybackPauseError(t *testing.T) {
@@ -216,9 +202,7 @@ func TestPlayUriTransferPlaybackPauseError(t *testing.T) {
 	m.On("Pause").Return(errors.New(e))
 
 	err := PlayUri(m, "foobar")
-	if err == nil || err.Error() != e {
-		t.Error("PlayUri was expected to return error when pausing playback during playback transfer sequence.")
-	}
+	assert.EqualError(t, err, e)
 }
 
 func TestPlayUriTransferPlaybackTransferError(t *testing.T) {
@@ -253,9 +237,7 @@ func TestPlayUriTransferPlaybackTransferError(t *testing.T) {
 	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
 
 	err := PlayUri(m, "foobar")
-	if err == nil || err.Error() != e {
-		t.Error("PlayUri was expected to return error when transferring playback during playback transfer sequence.")
-	}
+	assert.EqualError(t, err, e)
 }
 
 func TestPauseSuccess(t *testing.T) {
@@ -287,9 +269,7 @@ func TestPauseSuccess(t *testing.T) {
 	m.On("Pause").Return(nil)
 
 	err := Pause(m)
-	if err != nil {
-		t.Errorf("Pause failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPauseNoneActiveSuccess(t *testing.T) {
@@ -321,9 +301,7 @@ func TestPauseNoneActiveSuccess(t *testing.T) {
 	m.On("Pause").Return(nil)
 
 	err := Pause(m)
-	if err != nil {
-		t.Errorf("Pause failed with error %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestPauseDeviceNotFound(t *testing.T) {
@@ -346,9 +324,7 @@ func TestPauseDeviceNotFound(t *testing.T) {
 	m.On("PlayerDevices").Return(ds, nil)
 
 	err := Pause(m)
-	if err == nil || err.Error() != fmt.Sprintf("client identified by %s not found", n) {
-		t.Error("Pause was expected to return error when the device name was not found.")
-	}
+	assert.EqualError(t, err, fmt.Sprintf("client identified by %s not found", n))
 }
 
 func TestPausePlayerDevicesError(t *testing.T) {
@@ -361,10 +337,9 @@ func TestPausePlayerDevicesError(t *testing.T) {
 
 	m.On("PlayerDevices").Return(ds, errors.New(e))
 	err := Pause(m)
-	if err == nil || err.Error() != e {
-		t.Error("Pause was expected to return error fetching PlayerDevices")
-	}
+	assert.EqualError(t, err, e)
 }
+
 func TestPauseError(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
@@ -387,7 +362,5 @@ func TestPauseError(t *testing.T) {
 	m.On("Pause").Return(errors.New(e))
 
 	err := Pause(m)
-	if err == nil || err.Error() != e {
-		t.Error("Pause was expected to return error.")
-	}
+	assert.EqualError(t, err, e)
 }
