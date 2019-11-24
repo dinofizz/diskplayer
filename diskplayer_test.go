@@ -3,6 +3,7 @@ package diskplayer
 import (
 	"errors"
 	"fmt"
+	"github.com/dinofizz/diskplayer/mocks"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
 	"github.com/zmb3/spotify"
@@ -10,35 +11,11 @@ import (
 	"testing"
 )
 
-type MockSpotifyClient struct {
-	mock.Mock
-}
-
-func (m *MockSpotifyClient) PlayerDevices() ([]spotify.PlayerDevice, error) {
-	args := m.Called()
-	return args.Get(0).([]spotify.PlayerDevice), args.Error(1)
-}
-
-func (m *MockSpotifyClient) Pause() error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *MockSpotifyClient) TransferPlayback(deviceID spotify.ID, play bool) error {
-	args := m.Called(deviceID, play)
-	return args.Error(0)
-}
-
-func (m *MockSpotifyClient) PlayOpt(opt *spotify.PlayOptions) error {
-	args := m.Called(opt)
-	return args.Error(0)
-}
-
 func TestPlaySuccess(t *testing.T) {
 	viper.Set("recorder.file_path", "./test-fixtures/diskplayer.contents")
 	viper.Set("spotify.device_name", "test_device_name")
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	d := spotify.PlayerDevice{
 		ID:         "TEST_ID",
@@ -62,7 +39,7 @@ func TestPlaySuccess(t *testing.T) {
 func TestPlayUriSuccess(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	d := spotify.PlayerDevice{
 		ID:         "TEST_ID",
@@ -87,7 +64,7 @@ func TestPlayUriSuccess(t *testing.T) {
 func TestPlayPathSuccess(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	d := spotify.PlayerDevice{
 		ID:         "TEST_ID",
@@ -110,7 +87,7 @@ func TestPlayPathSuccess(t *testing.T) {
 }
 
 func TestPlayPathInvalidPath(t *testing.T) {
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 	err := PlayPath(m, "./test-fixtures/not_a_real_path")
 	if _, ok := err.(*os.PathError); !ok {
 		t.Errorf("PlayPath was expected to fail with os.PathError.")
@@ -118,7 +95,7 @@ func TestPlayPathInvalidPath(t *testing.T) {
 }
 
 func TestPlayPathEmptyFileError(t *testing.T) {
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 	err := PlayPath(m, "./test-fixtures/empty.contents")
 	if err == nil || err.Error() != "unable to read line from path: ./test-fixtures/empty.contents" {
 		t.Error("PlayPath was expected to fail when reading an empty file.")
@@ -126,7 +103,7 @@ func TestPlayPathEmptyFileError(t *testing.T) {
 }
 
 func TestPlayUriNoUriError(t *testing.T) {
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 	err := PlayUri(m, "")
 	if err == nil || err.Error() != "spotify URI is required" {
 		t.Error("PlayUri was expected to fail when provided an empty URI.")
@@ -136,7 +113,7 @@ func TestPlayUriNoUriError(t *testing.T) {
 func TestPlayUrPlayerDevicesError(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 	ds := []spotify.PlayerDevice{}
 
 	const e string = "PlayerDevices error"
@@ -152,7 +129,7 @@ func TestPlayUriDeviceNotFoundError(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	d := spotify.PlayerDevice{
 		ID:         "TEST_ID",
@@ -177,7 +154,7 @@ func TestPlayUriTransferPlaybackSuccess(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -213,7 +190,7 @@ func TestPlayUriTransferPlaybackPauseError(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -248,7 +225,7 @@ func TestPlayUriTransferPlaybackTransferError(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -285,7 +262,7 @@ func TestPauseSuccess(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -319,7 +296,7 @@ func TestPauseNoneActiveSuccess(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -353,7 +330,7 @@ func TestPauseDeviceNotFound(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
@@ -377,7 +354,7 @@ func TestPauseDeviceNotFound(t *testing.T) {
 func TestPausePlayerDevicesError(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 	ds := []spotify.PlayerDevice{}
 
 	const e string = "PlayerDevices error"
@@ -392,7 +369,7 @@ func TestPauseError(t *testing.T) {
 	const n = "test_device_name"
 	viper.Set("spotify.device_name", n)
 
-	m := new(MockSpotifyClient)
+	m := new(mocks.Client)
 
 	ds := []spotify.PlayerDevice{
 		{
