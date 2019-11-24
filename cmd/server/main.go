@@ -7,8 +7,8 @@ import (
 
 func main() {
 	diskplayer.ReadConfig(diskplayer.DEFAULT_CONFIG_NAME)
-	s := &diskplayer.RealDiskplayerServer{}
-	e := s.RunRecordServer()
+	ds := diskplayer.NewDiskplayerServer(nil, nil)
+	e := ds.RunRecordServer()
 	if e != nil {
 		log.Fatal(e)
 	}

@@ -20,6 +20,8 @@ type DiskplayerServer interface {
 	Authenticator() *spotify.Authenticator
 }
 
+// NewDiskplayerServer returns a new DiskplayerServer instance.
+// The arguments are required if the server instance is to be used to obtain a new Spotify auth token.
 func NewDiskplayerServer(a *spotify.Authenticator, ch chan *oauth2.Token) *RealDiskplayerServer {
 	h := CallbackHandler{
 		ch:   ch,
