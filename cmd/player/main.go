@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"github.com/dinofizz/diskplayer"
+	"golang.org/x/oauth2"
 	"log"
+	"os"
 )
 
-
 func main() {
+	auth := flag.Bool("auth", false, "Retrieve a new Spotify OAuth2 token.")
 	uri := flag.String("uri", "", "Spotify URI of album/playlist to play.")
 	path := flag.String("path", "", "Path to file containing Spotify URI to play.")
 	pause := flag.Bool("pause", false, "Pause Spotify playback.")
@@ -17,9 +19,9 @@ func main() {
 		log.Fatalf("Unknown argument: %s. You might be missing a \"-\".", a[0]) // Expect user to eliminate unknown arguments
 	}
 
-	if *pause && (*uri != "" || *path != "") {
+	if (*auth && *pause) || (*auth && (*uri != "" || *path != "")) || (*pause && (*uri != "" || *path != "")) {
 		flag.Usage()
-		log.Fatal("Please specify either [pause] OR ONE OF [uri, path].")
+		log.Fatal("Please specify either [auth] OR [pause] OR ONE OF [uri, path].")
 	}
 
 	if *uri != "" && *path != "" {
@@ -29,10 +31,33 @@ func main() {
 
 	diskplayer.ReadConfig(diskplayer.DEFAULT_CONFIG_NAME)
 
-	c, err := diskplayer.NewClient()
+	an, err := diskplayer.NewAuthenticator()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if *auth {
+		ch := make(chan *oauth2.Token, 1)
+		s := diskplayer.NewDiskplayerServer(an, ch)
+
+		t, err := diskplayer.NewToken(s)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = diskplayer.SaveToken(t)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
+	}
+
+	t, err := diskplayer.ReadToken()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c := diskplayer.NewClient(an, t)
 
 	if *pause {
 		err = diskplayer.Pause(c)

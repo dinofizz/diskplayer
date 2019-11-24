@@ -1,0 +1,6 @@
+{
+  "access_token": "test_access_token",
+  "token_type": "Bearer",
+  "refresh_token": "test_refresh_token",
+  "expiry": "2019-11-09T14:01:07.170612451Z"
+}
