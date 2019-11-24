@@ -106,7 +106,7 @@ func TestPlayUrPlayerDevicesError(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
 	m := new(mocks.Client)
-	ds := []spotify.PlayerDevice{}
+	var ds []spotify.PlayerDevice
 
 	const e string = "PlayerDevices error"
 
@@ -331,7 +331,7 @@ func TestPausePlayerDevicesError(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 
 	m := new(mocks.Client)
-	ds := []spotify.PlayerDevice{}
+	var ds []spotify.PlayerDevice
 
 	const e string = "PlayerDevices error"
 
