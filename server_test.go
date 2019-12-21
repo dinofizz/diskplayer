@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -30,4 +32,21 @@ func TestRealDiskplayerServer_RunCallbackServer(t *testing.T) {
 	defer cancel()
 	err = s.Shutdown(ctx)
 	assert.NoError(t,err)
+}
+
+func TestIndexHandler(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(indexHandler)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
 }

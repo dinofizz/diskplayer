@@ -11,6 +11,21 @@
     <h1>Diskplayer Recorder</h1>
     <section>
         <p>
+            <h3>lsblk output:</h3>
+            <pre>
+{{printf "%s" .Lsblk}}
+            </pre>
+        </p>
+    </section>
+    <section>
+        <h3>Recorder parameters</h3>
+        <p>
+            <label for="device_path">
+                <span>Device path: </span>
+            </label>
+            <input type="text" id="device_path" name="device_path">
+        </p>
+        <p>
             <label for="web_url">
                 <span>Spotify web URL: </span>
             </label>

@@ -11,13 +11,13 @@ import (
 // the filepath specified in the diskplayer.yaml configuration file under the recorder.file_path field.
 // The web URL should be something like https://open.spotify.com/album/1S7mumn7D4riEX2gVWYgPO
 // Returns an error if one is encountered.
-func Record(url string) error {
+func Record(url string, fullPath string) error {
 	s, err := createSpotifyUri(url)
 	if err != nil {
 		return err
 	}
 
-	err = writeToDisk(s)
+	err = writeToDisk(s, fullPath)
 	if err != nil {
 		return err
 	}
@@ -45,14 +45,14 @@ func createSpotifyUri(url string) (string, error) {
 // writeToDisk takes a string containing a Spotify URI and writes to the the filepath specified in the diskplayer.yaml
 // configuration file under the recorder.file_path field.
 // Returns an error if one is encountered.
-func writeToDisk(spotifyUri string) error {
-	p := ConfigValue(RECORD_PATH)
+func writeToDisk(spotifyUri, fullPath string) error {
 
 	b := []byte(spotifyUri)
-	err := ioutil.WriteFile(p, b, 0644)
+	err := ioutil.WriteFile(fullPath, b, 0644)
 	if err != nil {
 		return err
 	}
+
 
 	return nil
 }

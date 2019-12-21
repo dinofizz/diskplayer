@@ -66,7 +66,7 @@ func main() {
 	} else if *path != "" {
 		err = diskplayer.PlayPath(c, *path)
 	} else {
-		err = diskplayer.Play(c)
+		flag.Usage()
 	}
 
 	if err != nil {

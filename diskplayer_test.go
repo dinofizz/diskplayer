@@ -12,30 +12,6 @@ import (
 	"testing"
 )
 
-func TestPlaySuccess(t *testing.T) {
-	viper.Set("recorder.file_path", "./test-fixtures/diskplayer.contents")
-	viper.Set("spotify.device_name", "test_device_name")
-
-	m := new(mocks.Client)
-
-	d := spotify.PlayerDevice{
-		ID:         "TEST_ID",
-		Active:     false,
-		Restricted: false,
-		Name:       "test_device_name",
-		Type:       "",
-		Volume:     0,
-	}
-
-	ds := []spotify.PlayerDevice{d}
-
-	m.On("PlayerDevices").Return(ds, nil)
-	m.On("PlayOpt", mock.AnythingOfType("*spotify.PlayOptions")).Return(nil)
-
-	err := Play(m)
-	assert.NoError(t, err)
-}
-
 func TestPlayUriSuccess(t *testing.T) {
 	viper.Set("spotify.device_name", "test_device_name")
 

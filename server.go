@@ -1,13 +1,19 @@
 package diskplayer
 
 import (
+	"github.com/docker/docker/pkg/mount"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 	"html/template"
 	"log"
 	"net/http"
 	"net/url"
+	"os/exec"
 )
+
+type IndexPage struct {
+	Lsblk []byte
+}
 
 type ErrorPage struct {
 	Body []byte
@@ -39,8 +45,9 @@ type RealDiskplayerServer struct {
 // Files are served directly from the "static" folder.
 func (s *RealDiskplayerServer) RunRecordServer() error {
 	p := ConfigValue(RECORD_SERVER_PORT)
-
-	http.Handle("/", http.FileServer(http.Dir("./static")))
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/record", recordHandler)
 	return http.ListenAndServe(":"+p, nil)
 }
@@ -76,14 +83,57 @@ func (s *RealDiskplayerServer) Authenticator() *spotify.Authenticator {
 // If the recording is successful, redirection to a success page occurs, otherwise an error page is returned.
 func recordHandler(w http.ResponseWriter, r *http.Request) {
 	webUrl := r.FormValue("web_url")
-	e := Record(webUrl)
-	if e != nil {
-		p := &ErrorPage{Body: []byte(e.Error())}
-		t, _ := template.ParseFiles("./static/error.html")
-		t.Execute(w, p)
-	} else {
-		http.Redirect(w, r, "/success.html", http.StatusFound)
+	devPath := r.FormValue("device_path")
+
+	folder := ConfigValue(RECORD_FOLDER_PATH)
+	filename := ConfigValue(RECORD_FILENAME)
+	dstPath := folder + "/" + filename
+
+	m, err := mount.Mounted(folder);
+	if err != nil {
+		returnErrorPage(w, err)
 	}
+
+	if m == false {
+		err := mount.Mount(devPath, folder, "vfat", "");
+		if err != nil {
+			returnErrorPage(w, err)
+		}
+	}
+
+	err = Record(webUrl, dstPath)
+	if err != nil {
+		returnErrorPage(w, err)
+	}
+
+	err = mount.Unmount(folder);
+	if err != nil {
+		returnErrorPage(w, err)
+	}
+
+	http.Redirect(w, r, "/static/success.html", http.StatusFound)
+}
+
+// indexHandler handles requests to the server for the root location "/".
+// A listing of the attached devices is obtained and applied to the index.html template response.
+// An error page is returned if an error occurred.
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("lsblk", "--nodeps")
+	stdout, err := cmd.Output()
+	if err != nil {
+		returnErrorPage(w, err);
+	}
+
+	p := &IndexPage{Lsblk: stdout}
+	t, _ := template.ParseFiles("./templates/index.html")
+	t.Execute(w, p)
+}
+
+// returnErrorPage returns an HTML error page, inserting error details into the error.html template.
+func returnErrorPage(w http.ResponseWriter, err error) {
+	p := &ErrorPage{Body: []byte(err.Error())}
+	t, _ := template.ParseFiles("./templates/error.html")
+	t.Execute(w, p)
 }
 
 type CallbackHandler struct {

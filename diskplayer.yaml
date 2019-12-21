@@ -4,7 +4,8 @@ spotify:
   client_id: YOUR_SPOTIFY_CLIENT_ID 
   client_secret: YOUR_SPOTIFY_CLIENT_SECRET 
 recorder:
-  file_path: /tmp/diskplayer.contents
+  folder_path: /tmp
+  filename: diskplayer.contents
   server_port: 3000
 ## optional token path below
 #token:

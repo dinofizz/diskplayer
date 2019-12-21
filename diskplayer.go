@@ -8,14 +8,6 @@ import (
 	"os"
 )
 
-// Play will play an album or playlist by reading a Spotify URI from a file whose filepath is defined in the
-// diskplayer.yaml configuration file under the recorder.file_path entry.
-// An error is returned if one is encountered.
-func Play(c Client) error {
-	p := ConfigValue(RECORD_PATH)
-	return PlayPath(c, p)
-}
-
 // PlayPath will play an album or playlist by reading a Spotify URI from a file whose filepath is passed into the
 // function.
 // An error is returned if one is encountered.

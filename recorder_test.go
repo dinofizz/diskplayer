@@ -27,7 +27,7 @@ func TestRecord(t *testing.T) {
 	for _, tt := range recordTests {
 		t.Run(tt.in, func(t *testing.T) {
 
-			err := Record(tt.in)
+			err := Record(tt.in, p)
 			if tt.e == "" {
 				assert.NoErrorf(t, err, "Record encountered an unexpected error.")
 			} else if err != nil && tt.e != "" {
@@ -80,7 +80,7 @@ func TestRecordWriteError(t *testing.T) {
 		err := os.Remove(p)
 		assert.NoErrorf(t, err, "Failed to remove temporary test file: %s", p)
 	}()
-	err = Record(recordTests[0].in)
+	err = Record(recordTests[0].in, p)
 	assert.Error(t, err)
 	assert.Equal(t, "open ./test_recorder_path.contents: permission denied", err.Error())
 }
