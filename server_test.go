@@ -2,6 +2,7 @@ package diskplayer
 
 import (
 	"context"
+	"errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/zmb3/spotify"
@@ -32,6 +33,12 @@ func TestRealDiskplayerServer_RunCallbackServer(t *testing.T) {
 	defer cancel()
 	err = s.Shutdown(ctx)
 	assert.NoError(t,err)
+}
+
+func TestErrorHandler(t *testing.T) {
+	rr := httptest.NewRecorder()
+	err := errors.New("New error")
+	errorPage(rr, err)
 }
 
 func TestIndexHandler(t *testing.T) {

@@ -91,24 +91,24 @@ func recordHandler(w http.ResponseWriter, r *http.Request) {
 
 	m, err := mount.Mounted(folder);
 	if err != nil {
-		returnErrorPage(w, err)
+		errorPage(w, err)
 	}
 
 	if m == false {
 		err := mount.Mount(devPath, folder, "vfat", "");
 		if err != nil {
-			returnErrorPage(w, err)
+			errorPage(w, err)
 		}
 	}
 
 	err = Record(webUrl, dstPath)
 	if err != nil {
-		returnErrorPage(w, err)
+		errorPage(w, err)
 	}
 
 	err = mount.Unmount(folder);
 	if err != nil {
-		returnErrorPage(w, err)
+		errorPage(w, err)
 	}
 
 	http.Redirect(w, r, "/static/success.html", http.StatusFound)
@@ -121,7 +121,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("lsblk", "--nodeps")
 	stdout, err := cmd.Output()
 	if err != nil {
-		returnErrorPage(w, err);
+		errorPage(w, err);
 	}
 
 	p := &IndexPage{Lsblk: stdout}
@@ -129,8 +129,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
-// returnErrorPage returns an HTML error page, inserting error details into the error.html template.
-func returnErrorPage(w http.ResponseWriter, err error) {
+// errorPage returns an HTML error page, inserting error details into the error.html template.
+func errorPage(w http.ResponseWriter, err error) {
 	p := &ErrorPage{Body: []byte(err.Error())}
 	t, _ := template.ParseFiles("./templates/error.html")
 	t.Execute(w, p)
