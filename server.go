@@ -80,6 +80,10 @@ func (s *RealDiskplayerServer) Authenticator() *spotify.Authenticator {
 }
 
 // recordHandler handles requests to the server which contain a Spotify web URL to be recorded.
+// Two values are extracted from the request: web_url and device_path:
+// web_url is the complete Spotify web URL pointing to an album or playlist.
+// device_path is the complete path to the disk device, i.e. /dev/sda. This will be mounted to the folder specified
+// in the diskplayer.yaml configuration file.
 // If the recording is successful, redirection to a success page occurs, otherwise an error page is returned.
 func recordHandler(w http.ResponseWriter, r *http.Request) {
 	webUrl := r.FormValue("web_url")

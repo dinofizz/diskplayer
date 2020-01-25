@@ -7,6 +7,5 @@ recorder:
   folder_path: /tmp
   filename: diskplayer.contents
   server_port: 3000
-## optional token path below
-#token:
-#   path: /home/YOUR_USER/.config/diskplayer/token.json
+token:
+   path: ./token.json
