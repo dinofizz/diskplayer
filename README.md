@@ -9,6 +9,8 @@ There are two components of diskplayer. The "player" binary and the "recorder" b
   
 The recorder binary runs as an HTTP server, and exposes a simple UI which can be used to record a Spotify URI to a chosen location.
 
+**Note: I do not intend to "support" this code. It was a great learning excercise for me in my joureny to learn some basic Go. Now that I have the project working and complete, I won't re-visitng this much!**
+
 ## Build
 
 ### Requirements
