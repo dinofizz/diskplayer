@@ -14,8 +14,15 @@ The recorder binary runs as an HTTP server, and exposes a simple UI which can be
 
 ### Requirements
 
-displayer was developed using Go 1.13, and uses go modules to install its required dependencies.
+displayer was developed using Go 1.13 on Ubuntu 19.10, and uses go modules to install its required dependencies. Follow the instructions here to download and install the latest version of Go: https://golang.org/doc/install
 
+### Player build
+
+To build the player binary, run the following command from the terminal
+
+```shell script
+$ go build -o player ./cmd/player/main.go
+```
 
 
 ## Configuration
