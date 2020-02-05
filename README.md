@@ -1,15 +1,21 @@
 # diskplayer
 
-diskplayer is essentially a Spotify client, written in Go, built around [zmb3's existing Spotify Web API wrapper
-](https://github.com/zmb3/spotify).
+diskplayer is essentially a Spotify "play and pause controller", written in Go, built around [zmb3's existing Spotify Web API wrapper](https://github.com/zmb3/spotify).
 
-This software is part of the larger "diskplayer" project of mine: a 3.5" floppy disk music player, running on a Raspberry Pi.
+This software is part of the larger diskplayer project of mine: a Spotify music player running on a Raspberry Pi, which uses a 3.5" floppy disks as it's "media". In addition to the player and recorder code in this repo, the project makes use of [Spotifyd](https://github.com/Spotifyd/spotifyd) as a Spotify client, also running on the Pi (this is detailed in my blog post here).
 
-There are two components of diskplayer. The "player" binary and the "recorder" binary. The player binary can be used to obtain a new long-lived Spotify client authentication token, as well as accepting Spotify URI or a path to a file containing a Spotify URI which it will attempt to play. Playback occurs on an existing Spotify playback device, which is specified in a configuration file.
+There is also a YouTube video of Diskplayer here: https://youtu.be/1usBGe_ZiGc
+
+
+![Diskplayer](images/diskplayer.jpg)
+
+There are two components to the core diskplayer software. The "player" binary and the "recorder" binary. The player binary can be used to obtain a new long-lived Spotify client authentication token, as well as accepting Spotify URI or a path to a file containing a Spotify URI which it will attempt to play.
+
+Playback occurs on an existing Spotify playback device, which is specified in a configuration file.
   
 The recorder binary runs as an HTTP server, and exposes a simple UI which can be used to record a Spotify URI to a chosen location.
 
-**Note: I do not intend to "support" this code. It was a great learning excercise for me in my joureny to learn some basic Go. Now that I have the project working and complete, I won't re-visitng this much!**
+**Note: I do not intend to "support" this code. It was a great learning exercise for me in my journey to learn some basic Go, but it's not something I see myself continuing to develop.**
 
 ## Build
 
