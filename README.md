@@ -1,3 +1,5 @@
+_Note: This was the first Go code I wrote, it's probably not so great_
+
 # diskplayer
 
 diskplayer is essentially a Spotify "play and pause controller", written in Go, built around [zmb3's existing Spotify Web API wrapper](https://github.com/zmb3/spotify).
